@@ -1,0 +1,13 @@
+{
+  "tests": [
+    {
+      "name": "Get all litters",
+      "method": "GET",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "litters": []
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

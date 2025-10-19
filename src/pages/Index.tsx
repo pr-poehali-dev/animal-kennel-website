@@ -1,47 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
-
-const dogs = [
-  {
-    id: 1,
-    name: 'Аллегра Империал Голд',
-    gender: 'Сука',
-    breed: 'Немецкая овчарка',
-    titles: ['Чемпион России', 'Юный Чемпион РКФ'],
-    achievements: 'Отличные рабочие качества, идеальный экстерьер',
-    image: 'https://cdn.poehali.dev/projects/03365462-7cb6-4dfd-901d-b4654a3194cd/files/87fc32c6-a399-432c-b6c7-a6f86626700b.jpg',
-    parents: 'Отец: INT CH Quantum v. Arlett / Мать: CH Bella Imperio'
-  },
-  {
-    id: 2,
-    name: 'Барон фон Штольценберг',
-    gender: 'Кобель',
-    breed: 'Немецкая овчарка',
-    titles: ['Интерчемпион', 'Чемпион РКФ', 'Чемпион НКП'],
-    achievements: 'Производитель года 2023, отличная передача качеств потомству',
-    image: 'https://cdn.poehali.dev/projects/03365462-7cb6-4dfd-901d-b4654a3194cd/files/b137df31-139e-4e22-a433-e29d969e96f8.jpg',
-    parents: 'Отец: V Vegas Du Haut Mansard / Мать: V Yana Nivas'
-  }
-];
-
-const puppies = [
-  {
-    id: 1,
-    name: 'Помет А',
-    born: '15.08.2024',
-    available: 3,
-    parents: 'Барон фон Штольценберг × Аллегра Империал Голд',
-    description: 'Высокопородные щенки с отличными данными. Документы РКФ, клеймо, ветпаспорт.',
-    image: 'https://cdn.poehali.dev/projects/03365462-7cb6-4dfd-901d-b4654a3194cd/files/81ffe7bd-b42c-4aab-9038-41e0f9d7ca92.jpg'
-  }
-];
+import { api } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Index() {
+  const navigate = useNavigate();
+  const { isAdmin } = useAuth();
+  const [dogs, setDogs] = useState([]);
+  const [litters, setLitters] = useState([]);
+  const [gallery, setGallery] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -49,10 +22,34 @@ export default function Index() {
     message: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const [dogsData, littersData, galleryData] = await Promise.all([
+        api.getDogs(),
+        api.getLitters(),
+        api.getGallery()
+      ]);
+      setDogs(dogsData.dogs || []);
+      setLitters(littersData.litters || []);
+      setGallery(galleryData.photos || []);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert('Спасибо за обращение! Мы свяжемся с вами в ближайшее время.');
-    setFormData({ name: '', email: '', phone: '', message: '' });
+    try {
+      await api.sendMessage(formData);
+      alert('Спасибо за обращение! Мы свяжемся с вами в ближайшее время.');
+      setFormData({ name: '', email: '', phone: '', message: '' });
+    } catch (error) {
+      alert('Ошибка отправки сообщения. Попробуйте позже.');
+    }
   };
 
   return (
@@ -86,10 +83,18 @@ export default function Index() {
                 Контакты
               </a>
             </div>
-            <Button className="hidden md:inline-flex">
-              <Icon name="Phone" size={18} className="mr-2" />
-              Связаться
-            </Button>
+            <div className="flex gap-2">
+              {isAdmin && (
+                <Button variant="outline" onClick={() => navigate('/admin')}>
+                  <Icon name="Settings" size={18} className="mr-2" />
+                  Админка
+                </Button>
+              )}
+              <Button className="hidden md:inline-flex">
+                <Icon name="Phone" size={18} className="mr-2" />
+                Связаться
+              </Button>
+            </div>
           </div>
         </div>
       </nav>
@@ -214,7 +219,7 @@ export default function Index() {
               >
                 <div className="relative overflow-hidden h-80">
                   <img 
-                    src={dog.image}
+                    src={dog.image_url}
                     alt={dog.name}
                     className="w-full h-full object-cover transition-transform duration-700 hover:scale-110"
                   />
@@ -277,12 +282,12 @@ export default function Index() {
           </div>
 
           <div className="max-w-4xl mx-auto">
-            {puppies.map((litter) => (
+            {litters.map((litter) => (
               <Card key={litter.id} className="overflow-hidden border-2 mb-8">
                 <div className="md:flex">
                   <div className="md:w-2/5 relative overflow-hidden h-80 md:h-auto">
                     <img 
-                      src={litter.image}
+                      src={litter.image_url}
                       alt={litter.name}
                       className="w-full h-full object-cover"
                     />
@@ -296,7 +301,7 @@ export default function Index() {
                     <CardHeader>
                       <CardTitle className="text-3xl mb-2">{litter.name}</CardTitle>
                       <CardDescription className="text-base">
-                        Дата рождения: <span className="font-semibold">{litter.born}</span>
+                        Дата рождения: <span className="font-semibold">{litter.born_date}</span>
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -374,19 +379,15 @@ export default function Index() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-6xl mx-auto">
-            {[1, 2, 3, 1, 2, 3, 1, 2].map((_, i) => (
+            {gallery.map((photo, i) => (
               <div 
-                key={i}
+                key={photo.id}
                 className="relative overflow-hidden rounded-lg aspect-square group cursor-pointer animate-scale-in"
                 style={{ animationDelay: `${i * 50}ms` }}
               >
                 <img 
-                  src={`https://cdn.poehali.dev/projects/03365462-7cb6-4dfd-901d-b4654a3194cd/files/${
-                    i % 3 === 0 ? '87fc32c6-a399-432c-b6c7-a6f86626700b' :
-                    i % 3 === 1 ? 'b137df31-139e-4e22-a433-e29d969e96f8' :
-                    '81ffe7bd-b42c-4aab-9038-41e0f9d7ca92'
-                  }.jpg`}
-                  alt={`Галерея ${i + 1}`}
+                  src={photo.image_url}
+                  alt={photo.title || `Галерея ${i + 1}`}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">

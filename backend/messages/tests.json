@@ -1,0 +1,19 @@
+{
+  "tests": [
+    {
+      "name": "Submit support message",
+      "method": "POST",
+      "body": {
+        "name": "Иван Иванов",
+        "email": "test@example.com",
+        "phone": "+7 999 123 45 67",
+        "message": "Тестовое сообщение"
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "success": true
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

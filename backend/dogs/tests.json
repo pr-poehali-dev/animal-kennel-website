@@ -1,0 +1,13 @@
+{
+  "tests": [
+    {
+      "name": "Get all dogs",
+      "method": "GET",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "dogs": []
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
